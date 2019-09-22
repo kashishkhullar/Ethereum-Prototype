@@ -9,6 +9,10 @@ const LT = "LT";
 const EQ = "EQ";
 const AND = "AND";
 const OR = "OR";
+const JUMP = "JUMP";
+const JUMPI = "JUMPI";
+
+const EXECUTION_COMPLETE = "Execution Complete";
 
 class Interpreter {
 	/**
@@ -38,7 +42,7 @@ class Interpreter {
 			try {
 				switch (opCode) {
 					case STOP:
-						throw new Error("Execution is complete");
+						throw new Error(EXECUTION_COMPLETE);
 
 					case PUSH:
 						// increment counter to get the value to be pushed
@@ -79,18 +83,41 @@ class Interpreter {
 
 						break;
 
+					case JUMP:
+						this.jump();
+						break;
+
+					case JUMPI:
+						let condition = this.state.stack.pop();
+						if (condition === 1) {
+							this.jump();
+						}
+						break;
+
 					// unknown opcodes are ignored
 					default:
 						console.log("INVALID OPCODE");
 						break;
 				}
 			} catch (error) {
-				return this.state.stack[this.state.stack.length - 1];
-			}
+				if (error.message == EXECUTION_COMPLETE)
+					return this.state.stack[this.state.stack.length - 1];
 
+				throw error;
+			}
 			// increment the program counter to point to the next instruction
 			this.state.programCounter++;
 		}
+	}
+
+	jump() {
+		let destination = this.state.stack.pop();
+
+		if (destination < 0 || destination > this.state.code.length) {
+			throw new error(`Invalid destination: ${destination}`);
+		}
+		this.state.programCounter = destination;
+		this.state.programCounter--;
 	}
 }
 
@@ -148,3 +175,15 @@ code = [PUSH, 0, PUSH, 1, AND, STOP];
 result = new Interpreter().runCode(code);
 
 console.log("Result of 0 and 1:", result);
+
+// JUMP
+code = [PUSH, 6, JUMP, PUSH, 0, JUMP, PUSH, "jump successful.", STOP];
+result = new Interpreter().runCode(code);
+
+console.log("Result of jump:", result);
+
+// JUMPI
+code = [PUSH, 8, PUSH, 1, JUMPI, PUSH, 0, JUMP, PUSH, "jump successful.", STOP];
+result = new Interpreter().runCode(code);
+
+console.log("Result of jumpI:", result);
