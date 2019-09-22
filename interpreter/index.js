@@ -1,8 +1,9 @@
 const STOP = "STOP";
 const ADD = "ADD";
+const SUB = "SUB";
+const MUL = "MUL";
+const DIV = "DIV";
 const PUSH = "PUSH";
-
-const code = [PUSH, 2, PUSH, 3, ADD, STOP];
 
 class Interpreter {
   /**
@@ -33,18 +34,35 @@ class Interpreter {
         switch (opCode) {
           case STOP:
             throw new Error("Execution is complete");
+
           case PUSH:
             // increment counter to get the value to be pushed
             this.state.programCounter++;
             this.state.stack.push(this.state.code[this.state.programCounter]);
             break;
+
+          // Stack the 4 main operations since most of the code is common
           case ADD:
+          case SUB:
+          case MUL:
+          case DIV:
             // get the to operands to be pushed from the stack
             const a = this.state.stack.pop();
             const b = this.state.stack.pop();
-            this.state.stack.push(a + b);
+
+            // store the result of the operation
+            let result;
+
+            // compute the result based on the opcode
+            if (opCode == ADD) result = a + b;
+            if (opCode == SUB) result = a - b;
+            if (opCode == MUL) result = a * b;
+            if (opCode == DIV) result = a / b;
+            this.state.stack.push(result);
 
             break;
+
+          // unknown opcodes are ignored
           default:
             break;
         }
@@ -58,5 +76,27 @@ class Interpreter {
   }
 }
 
-const interpreter = new Interpreter();
-console.log(interpreter.runCode(code));
+// Testing the interpreter
+
+// Addition
+let code = [PUSH, 2, PUSH, 3, ADD, STOP];
+let result = new Interpreter().runCode(code);
+console.log("Result of 3+2:", result);
+
+// Subtraction
+code = [PUSH, 2, PUSH, 3, SUB, STOP];
+result = new Interpreter().runCode(code);
+
+console.log("Result of 3-2:", result);
+
+// Multiplication
+code = [PUSH, 2, PUSH, 3, MUL, STOP];
+result = new Interpreter().runCode(code);
+
+console.log("Result of 3*2:", result);
+
+// Division
+code = [PUSH, 2, PUSH, 3, DIV, STOP];
+result = new Interpreter().runCode(code);
+
+console.log("Result of 3/2:", result);
