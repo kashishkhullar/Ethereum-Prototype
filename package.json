@@ -1,0 +1,15 @@
+{
+  "name": "ethereum_udemy",
+  "version": "1.0.0",
+  "description": "This project is prototype of Ethereum Blockchain Platform built from scratch in Node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --watchAll"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jest": "^24.9.0"
+  }
+}

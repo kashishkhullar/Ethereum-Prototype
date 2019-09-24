@@ -12,7 +12,24 @@ const OR = "OR";
 const JUMP = "JUMP";
 const JUMPI = "JUMPI";
 
+const OPCODE_MAP = {
+	STOP,
+	ADD,
+	SUB,
+	MUL,
+	DIV,
+	PUSH,
+	GT,
+	LT,
+	EQ,
+	AND,
+	OR,
+	JUMP,
+	JUMPI
+};
+
 const EXECUTION_COMPLETE = "Execution Complete";
+const EXECUTION_LIMIT = 10000;
 
 class Interpreter {
 	/**
@@ -25,7 +42,8 @@ class Interpreter {
 		this.state = {
 			programCounter: 0,
 			stack: [],
-			code: []
+			code: [],
+			executionCount: 0
 		};
 	}
 
@@ -36,8 +54,22 @@ class Interpreter {
 
 		// run a while loop over each instruction
 		while (this.state.programCounter < this.state.code.length) {
+			// increment the times an instruction is executed
+			this.state.executionCount++;
+
+			if (this.state.executionCount > EXECUTION_LIMIT)
+				throw new Error(
+					`Check for infinite loop. Execution limit of ${EXECUTION_LIMIT} has been exceeded`
+				);
+
 			// get the current instruction in opCode variable
 			const opCode = this.state.code[this.state.programCounter];
+
+			if (
+				this.state.code.length - 1 === this.state.programCounter &&
+				opCode != STOP
+			)
+				throw new Error("STOP opcode missing");
 
 			try {
 				switch (opCode) {
@@ -47,6 +79,13 @@ class Interpreter {
 					case PUSH:
 						// increment counter to get the value to be pushed
 						this.state.programCounter++;
+
+						if (
+							this.state.programCounter ===
+							this.state.code.length - 1
+						)
+							throw new Error("Push cannot be last");
+
 						this.state.stack.push(
 							this.state.code[this.state.programCounter]
 						);
@@ -114,76 +153,124 @@ class Interpreter {
 		let destination = this.state.stack.pop();
 
 		if (destination < 0 || destination > this.state.code.length) {
-			throw new error(`Invalid destination: ${destination}`);
+			throw new Error(`Invalid destination: ${destination}`);
 		}
 		this.state.programCounter = destination;
 		this.state.programCounter--;
 	}
 }
 
-// Testing the interpreter
+Interpreter.OPCODE_MAP = OPCODE_MAP;
 
-// Addition
-let code = [PUSH, 2, PUSH, 3, ADD, STOP];
-let result = new Interpreter().runCode(code);
-console.log("Result of 3+2:", result);
+module.exports = Interpreter;
 
-// Subtraction
-code = [PUSH, 2, PUSH, 3, SUB, STOP];
-result = new Interpreter().runCode(code);
+// // Testing the interpreter
 
-console.log("Result of 3-2:", result);
+// // Addition
+// let code = [PUSH, 2, PUSH, 3, ADD, STOP];
+// let result = new Interpreter().runCode(code);
+// console.log("Result of 3+2:", result);
 
-// Multiplication
-code = [PUSH, 2, PUSH, 3, MUL, STOP];
-result = new Interpreter().runCode(code);
+// // Subtraction
+// code = [PUSH, 2, PUSH, 3, SUB, STOP];
+// result = new Interpreter().runCode(code);
 
-console.log("Result of 3*2:", result);
+// console.log("Result of 3-2:", result);
 
-// Division
-code = [PUSH, 2, PUSH, 3, DIV, STOP];
-result = new Interpreter().runCode(code);
+// // Multiplication
+// code = [PUSH, 2, PUSH, 3, MUL, STOP];
+// result = new Interpreter().runCode(code);
 
-console.log("Result of 3/2:", result);
+// console.log("Result of 3*2:", result);
 
-// Less than
-code = [PUSH, 2, PUSH, 3, LT, STOP];
-result = new Interpreter().runCode(code);
+// // Division
+// code = [PUSH, 2, PUSH, 3, DIV, STOP];
+// result = new Interpreter().runCode(code);
 
-console.log("Result of 3<2:", result);
+// console.log("Result of 3/2:", result);
 
-// greater than
-code = [PUSH, 2, PUSH, 3, GT, STOP];
-result = new Interpreter().runCode(code);
+// // Less than
+// code = [PUSH, 2, PUSH, 3, LT, STOP];
+// result = new Interpreter().runCode(code);
 
-console.log("Result of 3>2:", result);
+// console.log("Result of 3<2:", result);
 
-// Equal
-code = [PUSH, 2, PUSH, 2, EQ, STOP];
-result = new Interpreter().runCode(code);
+// // greater than
+// code = [PUSH, 2, PUSH, 3, GT, STOP];
+// result = new Interpreter().runCode(code);
 
-console.log("Result of 2==2:", result);
+// console.log("Result of 3>2:", result);
 
-// OR
-code = [PUSH, 1, PUSH, 0, OR, STOP];
-result = new Interpreter().runCode(code);
+// // Equal
+// code = [PUSH, 2, PUSH, 2, EQ, STOP];
+// result = new Interpreter().runCode(code);
 
-console.log("Result of 1 or 0:", result);
+// console.log("Result of 2==2:", result);
 
-// AND
-code = [PUSH, 0, PUSH, 1, AND, STOP];
-result = new Interpreter().runCode(code);
+// // OR
+// code = [PUSH, 1, PUSH, 0, OR, STOP];
+// result = new Interpreter().runCode(code);
 
-console.log("Result of 0 and 1:", result);
+// console.log("Result of 1 or 0:", result);
 
-// JUMP
-code = [PUSH, 6, JUMP, PUSH, 0, JUMP, PUSH, "jump successful.", STOP];
-result = new Interpreter().runCode(code);
+// // AND
+// code = [PUSH, 0, PUSH, 1, AND, STOP];
+// result = new Interpreter().runCode(code);
 
-console.log("Result of jump:", result);
+// console.log("Result of 0 and 1:", result);
 
-// JUMPI
-code = [PUSH, 8, PUSH, 1, JUMPI, PUSH, 0, JUMP, PUSH, "jump successful.", STOP];
-result = new Interpreter().runCode(code);
+// // JUMP
+// code = [PUSH, 6, JUMP, PUSH, 0, JUMP, PUSH, "jump successful.", STOP];
+// result = new Interpreter().runCode(code);
 
-console.log("Result of jumpI:", result);
+// console.log("Result of jump:", result);
+
+// // JUMPI
+// code = [PUSH, 8, PUSH, 1, JUMPI, PUSH, 0, JUMP, PUSH, "jump successful.", STOP];
+// result = new Interpreter().runCode(code);
+
+// console.log("Result of jumpI:", result);
+
+// // INVALID JUMP
+// code = [
+// 	PUSH,
+// 	99,
+// 	PUSH,
+// 	1,
+// 	JUMPI,
+// 	PUSH,
+// 	0,
+// 	JUMP,
+// 	PUSH,
+// 	"jumpi successful.",
+// 	STOP
+// ];
+// try {
+// 	new Interpreter().runCode(code);
+// } catch (error) {
+// 	console.log(error.message);
+// }
+
+// // INVALID PUSH
+// code = [PUSH, 0, PUSH];
+// try {
+// 	console.log(new Interpreter().runCode(code));
+// } catch (error) {
+// 	console.log(error.message);
+// }
+
+// // INVALID PUSH
+// code = [PUSH, 0, PUSH, 1];
+// try {
+// 	console.log(new Interpreter().runCode(code));
+// } catch (error) {
+// 	console.log(error.message);
+// }
+
+// // INVALID PUSH
+// code = [PUSH, 0, JUMP, 1, STOP];
+// try {
+// 	console.log(new Interpreter().runCode(code));
+// } catch (error) {
+// 	console.log(error.message);
+// }
