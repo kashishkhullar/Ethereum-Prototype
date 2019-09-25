@@ -13,4 +13,4 @@ const keccakHash = data => {
 	return hash.hex();
 };
 
-module.exports = { sortCharacters };
+module.exports = { sortCharacters, keccakHash };
