@@ -65,7 +65,9 @@ class Block {
 
 	static validateBlock({ lastBlock, block }) {
 		return new Promise((resolve, reject) => {
-			if (keccakHash(block) == keccakHash(Block.genesis())) {
+			console.log("In validate block");
+
+			if (keccakHash(block) === keccakHash(Block.genesis())) {
 				return resolve();
 			}
 			if (
@@ -110,6 +112,7 @@ class Block {
 					)
 				);
 			}
+			return resolve();
 		});
 	}
 

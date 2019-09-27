@@ -4,6 +4,8 @@
   "description": "This project is prototype of Ethereum Blockchain Platform built from scratch in Node.js",
   "main": "index.js",
   "scripts": {
+    "dev":"nodemon ./api",
+    "start": "node ./api",
     "test": "jest --watchAll"
   },
   "keywords": [],
@@ -11,6 +13,10 @@
   "license": "ISC",
   "dependencies": {
     "jest": "^24.9.0",
-    "js-sha3": "^0.8.0"
+    "js-sha3": "^0.8.0",
+    "express": "^4.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.19.2"
   }
 }
