@@ -5,7 +5,7 @@ class Blockchain {
 		this.chain = [Block.genesis()];
 	}
 
-	addBlock({ block }) {
+	addBlock({ block, transactionQueue }) {
 		return new Promise((resolve, reject) => {
 			Block.validateBlock({
 				lastBlock: this.chain[this.chain.length - 1],
@@ -13,14 +13,37 @@ class Blockchain {
 			})
 				.then(() => {
 					this.chain.push(block);
+					transactionQueue.clearBlockTransactions({
+						transactionSeries: block.transactionSeries
+					});
 					return resolve();
 				})
 				.catch(reject);
 		});
 	}
+
+	replaceChain({ chain }) {
+		return new Promise(async (resolve, reject) => {
+			for (let i = 0; i < chain.length; i++) {
+				const block = chain[i];
+				let lastBlockIndex = i - 1;
+				const lastBlock = lastBlockIndex >= 0 ? chain[i - 1] : null;
+
+				try {
+					await Block.validateBlock({ lastBlock, block });
+				} catch (error) {
+					return reject(error);
+				}
+
+				console.log(
+					`*-- Validated block: ${block.blockHeaders.number}`
+				);
+			}
+
+			this.chain = chain;
+			return resolve();
+		});
+	}
 }
 
 module.exports = Blockchain;
-
-const blockchain = new Blockchain();
-console.log(blockchain.chain);

@@ -6,8 +6,9 @@ const MAX_HASH_VALUE = parseInt("f".repeat(HASH_LENGTH), 16);
 const MAX_NONCE_VALUE = 2 ** 64;
 
 class Block {
-	constructor({ blockHeaders }) {
+	constructor({ blockHeaders, transactionSeries }) {
 		this.blockHeaders = blockHeaders;
+		this.transactionSeries = transactionSeries;
 	}
 
 	static calculateBlockTargetHash({ lastBlock }) {
@@ -24,18 +25,17 @@ class Block {
 	static adjustDifficulty({ lastBlock, timestamp }) {
 		const { difficulty } = lastBlock.blockHeaders;
 
-		if (timestamp - lastBlock.blockHeaders.timestamp > MINE_RATE) {
-			return difficulty - 1;
-		}
-
 		if (difficulty < 1) {
 			return 1;
+		}
+		if (timestamp - lastBlock.blockHeaders.timestamp > MINE_RATE) {
+			return difficulty - 1;
 		}
 
 		return difficulty + 1;
 	}
 
-	static mineBlock({ lastBlock, beneficiary }) {
+	static mineBlock({ lastBlock, beneficiary, transactionSeries }) {
 		const target = Block.calculateBlockTargetHash({ lastBlock });
 		let timestamp, truncatedBlockHeaders, header, nonce, underTargetHash;
 
@@ -46,7 +46,8 @@ class Block {
 				beneficiary,
 				difficulty: Block.adjustDifficulty({ lastBlock, timestamp }),
 				number: lastBlock.blockHeaders.number + 1,
-				timestamp
+				timestamp,
+				transactionRoot: keccakHash(transactionSeries)
 			};
 
 			header = keccakHash(truncatedBlockHeaders);
@@ -59,14 +60,15 @@ class Block {
 			blockHeaders: {
 				...truncatedBlockHeaders,
 				nonce
-			}
+			},
+			transactionSeries
 		});
 	}
 
 	static validateBlock({ lastBlock, block }) {
+		// console.log(lastBlock);
+		// console.log(block);
 		return new Promise((resolve, reject) => {
-			console.log("In validate block");
-
 			if (keccakHash(block) === keccakHash(Block.genesis())) {
 				return resolve();
 			}
