@@ -1,4 +1,5 @@
 const Interpreter = require("./index");
+const Trie = require("../store/trie");
 
 const OPCODE_MAP = ({
 	STOP,
@@ -13,7 +14,9 @@ const OPCODE_MAP = ({
 	AND,
 	OR,
 	JUMP,
-	JUMPI
+	JUMPI,
+	STORE,
+	LOAD
 } = Interpreter.OPCODE_MAP);
 
 describe("Interpreter", () => {
@@ -22,6 +25,7 @@ describe("Interpreter", () => {
 			it("should add 2 and 3", () => {
 				expect(
 					new Interpreter().runCode([PUSH, 2, PUSH, 3, ADD, STOP])
+						.result
 				).toEqual(5);
 			});
 		});
@@ -29,6 +33,7 @@ describe("Interpreter", () => {
 			it("should sub 2 and 3", () => {
 				expect(
 					new Interpreter().runCode([PUSH, 2, PUSH, 3, SUB, STOP])
+						.result
 				).toEqual(1);
 			});
 		});
@@ -36,6 +41,7 @@ describe("Interpreter", () => {
 			it("should mul 2 and 3", () => {
 				expect(
 					new Interpreter().runCode([PUSH, 2, PUSH, 3, MUL, STOP])
+						.result
 				).toEqual(6);
 			});
 		});
@@ -43,6 +49,7 @@ describe("Interpreter", () => {
 			it("should div 2 and 3", () => {
 				expect(
 					new Interpreter().runCode([PUSH, 2, PUSH, 3, DIV, STOP])
+						.result
 				).toEqual(1.5);
 			});
 		});
@@ -50,6 +57,7 @@ describe("Interpreter", () => {
 			it("should check if 3 is greater than 2", () => {
 				expect(
 					new Interpreter().runCode([PUSH, 2, PUSH, 3, GT, STOP])
+						.result
 				).toEqual(1);
 			});
 		});
@@ -57,6 +65,7 @@ describe("Interpreter", () => {
 			it("should check if 3  is less than 2", () => {
 				expect(
 					new Interpreter().runCode([PUSH, 2, PUSH, 3, LT, STOP])
+						.result
 				).toEqual(0);
 			});
 		});
@@ -64,6 +73,7 @@ describe("Interpreter", () => {
 			it("should check if 2 and 3 are equal", () => {
 				expect(
 					new Interpreter().runCode([PUSH, 2, PUSH, 3, EQ, STOP])
+						.result
 				).toEqual(0);
 			});
 		});
@@ -71,6 +81,7 @@ describe("Interpreter", () => {
 			it("should OR 1 and 0", () => {
 				expect(
 					new Interpreter().runCode([PUSH, 1, PUSH, 0, OR, STOP])
+						.result
 				).toEqual(1);
 			});
 		});
@@ -78,6 +89,7 @@ describe("Interpreter", () => {
 			it("should AND 1 and 0", () => {
 				expect(
 					new Interpreter().runCode([PUSH, 1, PUSH, 0, AND, STOP])
+						.result
 				).toEqual(0);
 			});
 		});
@@ -94,7 +106,7 @@ describe("Interpreter", () => {
 						PUSH,
 						"jump successful.",
 						STOP
-					])
+					]).result
 				).toEqual("jump successful.");
 			});
 		});
@@ -113,7 +125,7 @@ describe("Interpreter", () => {
 						PUSH,
 						"jump successful.",
 						STOP
-					])
+					]).result
 				).toEqual("jump successful.");
 			});
 		});
@@ -137,27 +149,66 @@ describe("Interpreter", () => {
 
 		describe("and the code includes an invalid PUSH value", () => {
 			it("throws an error", () => {
-				expect(() =>
-					new Interpreter().runCode([PUSH, 0, PUSH])
+				expect(
+					() => new Interpreter().runCode([PUSH, 0, PUSH]).result
 				).toThrow("STOP opcode missing");
 			});
 		});
 
 		describe("and the code missing STOP value", () => {
 			it("throws an error", () => {
-				expect(() =>
-					new Interpreter().runCode([PUSH, 0, PUSH, 1])
+				expect(
+					() => new Interpreter().runCode([PUSH, 0, PUSH, 1]).result
 				).toThrow("Push cannot be last");
 			});
 		});
 
 		describe("and the code includes an infinite loop", () => {
 			it("throws an error", () => {
-				expect(() =>
-					new Interpreter().runCode([PUSH, 0, JUMP, STOP])
+				expect(
+					() =>
+						new Interpreter().runCode([PUSH, 0, JUMP, STOP]).result
 				).toThrow(
 					"Check for infinite loop. Execution limit of 10000 has been exceeded"
 				);
+			});
+		});
+
+		describe("and the code includes STORE", () => {
+			const interpreter = new Interpreter({
+				storageTrie: new Trie()
+			});
+			const key = "foo";
+			const value = "bar";
+
+			interpreter.runCode([PUSH, value, PUSH, key, STORE, STOP]);
+
+			it("should include STORE", () => {
+				expect(interpreter.storageTrie.get({ key })).toEqual(value);
+			});
+		});
+
+		describe("and the code includes LOAD", () => {
+			const interpreter = new Interpreter({
+				storageTrie: new Trie()
+			});
+			const key = "foo";
+			const value = "bar";
+
+			it("should include LOAD", () => {
+				expect(
+					interpreter.runCode([
+						PUSH,
+						value,
+						PUSH,
+						key,
+						STORE,
+						PUSH,
+						key,
+						LOAD,
+						STOP
+					]).result
+				).toEqual(value);
 			});
 		});
 	});

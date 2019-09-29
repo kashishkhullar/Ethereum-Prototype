@@ -1,5 +1,7 @@
 const { GENESIS_DATA, MINE_RATE } = require("../config");
+const Transaction = require("../transaction");
 const { keccakHash } = require("../util");
+const Trie = require("../store/trie");
 
 const HASH_LENGTH = 64;
 const MAX_HASH_VALUE = parseInt("f".repeat(HASH_LENGTH), 16);
@@ -35,9 +37,10 @@ class Block {
 		return difficulty + 1;
 	}
 
-	static mineBlock({ lastBlock, beneficiary, transactionSeries }) {
+	static mineBlock({ lastBlock, beneficiary, transactionSeries, stateRoot }) {
 		const target = Block.calculateBlockTargetHash({ lastBlock });
 		let timestamp, truncatedBlockHeaders, header, nonce, underTargetHash;
+		const transactionTrie = Trie.buildTrie({ items: transactionSeries });
 
 		do {
 			timestamp = Date.now();
@@ -47,7 +50,8 @@ class Block {
 				difficulty: Block.adjustDifficulty({ lastBlock, timestamp }),
 				number: lastBlock.blockHeaders.number + 1,
 				timestamp,
-				transactionRoot: keccakHash(transactionSeries)
+				transactionRoot: transactionTrie.rootHash,
+				stateRoot
 			};
 
 			header = keccakHash(truncatedBlockHeaders);
@@ -65,7 +69,7 @@ class Block {
 		});
 	}
 
-	static validateBlock({ lastBlock, block }) {
+	static validateBlock({ lastBlock, block, state }) {
 		// console.log(lastBlock);
 		// console.log(block);
 		return new Promise((resolve, reject) => {
@@ -78,7 +82,7 @@ class Block {
 			) {
 				return reject(
 					new Error(
-						"The parent hash must be a hash of the last block headers"
+						"The parent hash must be a hash of the last block's headers"
 					)
 				);
 			}
@@ -96,7 +100,20 @@ class Block {
 						block.blockHeaders.difficulty
 				) > 1
 			) {
-				return reject("the difficulty must only be adjusted by 1");
+				return reject(
+					new Error("The difficulty must only adjust by 1")
+				);
+			}
+
+			const rebuiltTransactionsTrie = Trie.buildTrie({
+				items: block.transactionSeries
+			});
+
+			if (
+				rebuiltTransactionsTrie.rootHash !==
+				block.blockHeaders.transactionRoot
+			) {
+				return reject(new Error("Transaction root deos not match"));
 			}
 
 			const target = Block.calculateBlockTargetHash({ lastBlock });
@@ -114,8 +131,22 @@ class Block {
 					)
 				);
 			}
-			return resolve();
+
+			console.log("Finei till HERE");
+
+			Transaction.validateTransactionSeries({
+				transactionSeries: block.transactionSeries,
+				state
+			})
+				.then(resolve)
+				.catch(reject);
 		});
+	}
+
+	static runBlock({ block, state }) {
+		for (const transaction of block.transactionSeries) {
+			Transaction.runTransaction({ transaction, state });
+		}
 	}
 
 	static genesis() {

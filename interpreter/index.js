@@ -11,6 +11,8 @@ const AND = "AND";
 const OR = "OR";
 const JUMP = "JUMP";
 const JUMPI = "JUMPI";
+const STORE = "STORE";
+const LOAD = "LOAD";
 
 const OPCODE_MAP = {
 	STOP,
@@ -25,7 +27,27 @@ const OPCODE_MAP = {
 	AND,
 	OR,
 	JUMP,
-	JUMPI
+	JUMPI,
+	STORE,
+	LOAD
+};
+
+const OPCODE_GAS_MAP = {
+	STOP: 0,
+	ADD: 1,
+	SUB: 1,
+	MUL: 1,
+	DIV: 1,
+	PUSH: 0,
+	LT: 1,
+	GT: 1,
+	EQ: 1,
+	AND: 1,
+	OR: 1,
+	JUMP: 2,
+	JUMPI: 2,
+	STORE: 5,
+	LOAD: 5
 };
 
 const EXECUTION_COMPLETE = "Execution Complete";
@@ -38,19 +60,21 @@ class Interpreter {
 	 * stack - holds the instructions
 	 * code - holds all the instrcutions
 	 */
-	constructor() {
+	constructor({ storageTrie } = {}) {
 		this.state = {
 			programCounter: 0,
 			stack: [],
 			code: [],
 			executionCount: 0
 		};
+		this.storageTrie = storageTrie;
 	}
 
 	// runs code passed as argument
 	runCode(code) {
 		// assign the code to the state
 		this.state.code = code;
+		let gasUsed = 0;
 
 		// run a while loop over each instruction
 		while (this.state.programCounter < this.state.code.length) {
@@ -71,6 +95,10 @@ class Interpreter {
 			)
 				throw new Error("STOP opcode missing");
 
+			gasUsed += OPCODE_GAS_MAP[opCode];
+
+			let value, key;
+
 			try {
 				switch (opCode) {
 					case STOP:
@@ -85,10 +113,8 @@ class Interpreter {
 							this.state.code.length - 1
 						)
 							throw new Error("Push cannot be last");
-
-						this.state.stack.push(
-							this.state.code[this.state.programCounter]
-						);
+						value = this.state.code[this.state.programCounter];
+						this.state.stack.push(value);
 						break;
 
 					// Stack the 4 main operations since most of the code is common
@@ -133,14 +159,32 @@ class Interpreter {
 						}
 						break;
 
+					case STORE:
+						key = this.state.stack.pop();
+						value = this.state.stack.pop();
+
+						this.storageTrie.put({ key, value });
+						break;
+
+					case LOAD:
+						key = this.state.stack.pop();
+						value = this.storageTrie.get({ key });
+
+						this.state.stack.push(value);
+						break;
+
 					// unknown opcodes are ignored
+
 					default:
 						console.log("INVALID OPCODE");
 						break;
 				}
 			} catch (error) {
 				if (error.message == EXECUTION_COMPLETE)
-					return this.state.stack[this.state.stack.length - 1];
+					return {
+						gasUsed,
+						result: this.state.stack[this.state.stack.length - 1]
+					};
 
 				throw error;
 			}

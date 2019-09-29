@@ -40,7 +40,7 @@ class PubSub {
 
 				switch (channel) {
 					case CHANNEL_MAP.BLOCK:
-						console.log("block message", message);
+						// console.log("block message", message);
 						this.blockchain
 							.addBlock({
 								block: parsedObject,
@@ -71,7 +71,7 @@ class PubSub {
 		});
 	}
 
-	beoadcastBlock(block) {
+	broadcastBlock(block) {
 		this.publish({
 			channel: CHANNEL_MAP.BLOCK,
 			message: JSON.stringify(block)
