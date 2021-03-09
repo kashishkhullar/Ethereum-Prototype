@@ -17,7 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.19.0",
-    "elliptic": "^6.5.1",
+    "elliptic": "^6.5.4",
     "express": "^4.17.0",
     "jest": "^24.9.0",
     "js-sha3": "^0.8.0",
